@@ -1,0 +1,43 @@
+      SUBROUTINE ASMG(KLD,VDIMP,KLOCE,VCORE,VPRNE,VPREE,KNE,VKE,VFE,
+     1 VKGS,VKGD,VKGI,VFG,VDLE,VRES)
+C=======================================================================
+C     pg 439
+C=======================================================================
+C TO ASSEMBLE THE GLOBAL MASS MATRIX (ELEMENT FUNCTION 5)
+C=======================================================================
+      IMPLICIT REAL*8(A-H,O-Z)
+      COMMON/ELEM/NELT,NNEL,NTPE,NGRE,ME,NIDENT
+      COMMON/ASSE/NSYM
+      COMMON/RESO/NEQ
+      COMMON/RGDT/IEL,ITPE,ITPE1,IGRE,IDLE,ICE,IPRNE,IPREE,INEL,IDEG,IPG
+     1 ,ICOD
+      COMMON/ES/M,MR,MP,M1,M2
+      DIMENSION KLD(*),VDIMP(*),KLOCE(*),VCORE(*),VPRNE(*),VPREE(*),
+     1 KNE(*),VKE(*),VFE(*),VKGS(*),VKGD(*),VKGI(*),VFG(*),VDLE(*),
+     2 VRES(*),KEB(1)
+C-----------------------------------------------------------------------
+C------   REWIND ELEMENT FILE (M2)
+      REWIND M2
+C-----    LOOP OVER THE ELEMENTS
+      DO 30 IE=1,NELT
+C-----    SKIP COMPUTATIONS IF IDENTICAL ELEMENTS
+       IF(NIDENT.EQ.1.AND.IE.GT.1) GO TO 20
+C-----   READ AN ELEMENT
+      CALL RDELEM(M2,KLOCE,VCORE,VPRNE,VPREE,KNE)
+C-----   EVALUATE INTERPOLATION FUNCTIONS IF REQUIRED
+      IF(ITPE.EQ.ITPE1) GO TO 10
+      ICOD=2
+      CALL ELEMLB(VCORE,VPRNE,VPREE,VDLE,VKE,VFE)
+10    ICOD=5
+      CALL ELEMLB(VCORE,VPRNE,VPREE,VDLE,VKE,VFE)
+C-----   PRINT ELEMENT MATRIX
+      IF(M.LT.2) GO TO 20
+      IF(NSYM.EQ.0) IKE=IDLE*(IDLE+1)/2
+      IF(NSYM.EQ.1) IKE=IDLE*IDLE
+      WRITE(MP,2000) IEL,(VKE(I),I=1,IKE)
+2000  FORMAT(/' MATRIX (ME) , ELEMENT:',I5/(10X,10E12.5))
+C-----   ASSEMBLE
+20    CALL ASSEL(1,0,IDLE,NSYM,KLOCE,KLD,VKE,VFE,VKGS,VKGD,VKGI,VFG)
+30    ITPE1=ITPE
+      RETURN
+      END
